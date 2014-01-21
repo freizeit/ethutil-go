@@ -1,7 +1,6 @@
 package ethutil
 
 import (
-	"fmt"
 	"github.com/obscuren/secp256k1-go"
 	"math/big"
 )
@@ -12,7 +11,7 @@ type Transaction struct {
 	Value     *big.Int
 	Data      []string
 	Memory    []int
-	v         uint32
+	v         byte
 	r, s      []byte
 }
 
@@ -60,7 +59,7 @@ func (tx *Transaction) IsContract() bool {
 }
 
 func (tx *Transaction) Signature(key []byte) []byte {
-	hash := tx.Hash()
+	hash := Sha256Bin(tx.Hash())
 	sec := Sha256Bin(key)
 
 	sig, _ := secp256k1.Sign(hash, sec)
@@ -71,6 +70,7 @@ func (tx *Transaction) Signature(key []byte) []byte {
 func (tx *Transaction) PublicKey() []byte {
 	hash := Sha256Bin(tx.Hash())
 	sig := append(tx.r, tx.s...)
+	sig = append(sig, tx.v-27)
 
 	pubkey, _ := secp256k1.RecoverPubkey(hash, sig)
 
@@ -92,10 +92,9 @@ func (tx *Transaction) Sender() []byte {
 func (tx *Transaction) Sign(privk []byte) {
 	sig := tx.Signature(privk)
 
-	// Add 27 so we get either 27 or 28 (for positive and negative)
-	tx.v = uint32(sig[64]) + 27
 	tx.r = sig[:32]
-	tx.s = sig[32:65]
+	tx.s = sig[32:64]
+	tx.v = sig[64] + 27
 }
 
 func (tx *Transaction) RlpEncode() []byte {
@@ -117,17 +116,17 @@ func (tx *Transaction) RlpDecode(data []byte) {
 	decoder := NewRlpDecoder(data)
 
 	tx.Nonce = decoder.Get(0).AsString()
-	tx.Recipient = decoder.Get(0).AsString()
+	tx.Recipient = decoder.Get(1).AsString()
 	tx.Value = decoder.Get(2).AsBigInt()
 
 	d := decoder.Get(3)
 	tx.Data = make([]string, d.Length())
-	fmt.Println(d.Get(0))
 	for i := 0; i < d.Length(); i++ {
 		tx.Data[i] = d.Get(i).AsString()
 	}
 
-	tx.v = uint32(decoder.Get(4).AsUint())
-	tx.r = decoder.Get(5).AsBytes()
-	tx.s = decoder.Get(6).AsBytes()
+	// TODO something going wrong here
+	tx.v = byte(decoder.Get(4).AsUint())
+	tx.r = []byte(decoder.Get(5).AsString())
+	tx.s = []byte(decoder.Get(6).AsString())
 }
