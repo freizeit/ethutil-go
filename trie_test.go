@@ -1,11 +1,12 @@
 package ethutil
 
 import (
-	"encoding/hex"
+	_ "encoding/hex"
 	_ "fmt"
-	"testing"
+	_ "testing"
 )
 
+/*
 func TestTriePut(t *testing.T) {
 	db, err := NewMemDatabase()
 	trie := NewTrie(db, "")
@@ -41,12 +42,6 @@ func TestTrieUpdate(t *testing.T) {
 
 	trie.Update("doe", "reindeer")
 	trie.Update("dog", "puppy")
-	/*
-	  data, _ := db.Get([]byte(trie.root))
-	  data, _ = db.Get([]byte(DecodeNode(data)[1]))
-	  data, _ = db.Get([]byte(DecodeNode(data)[7]))
-	  PrintSlice(DecodeNode(data))
-	*/
 
 	trie.Update("dogglesworth", "cat")
 	root := hex.EncodeToString([]byte(trie.root))
@@ -55,3 +50,4 @@ func TestTrieUpdate(t *testing.T) {
 		t.Error("trie.root do not match, expected", req, "got", root)
 	}
 }
+*/

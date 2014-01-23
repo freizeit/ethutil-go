@@ -113,7 +113,7 @@ func (t *Trie) GetStateT(node interface{}, key []int) interface{} {
 	return ""
 }
 
-func (t *Trie) GetNodeT(node interface{}) *RlpDataAttribute {
+func (t *Trie) GetNodeT(node interface{}) *RlpValue {
 	n := Conv(node)
 
 	//if n.Type() != reflect.String {

@@ -5,6 +5,31 @@ import (
 	"testing"
 )
 
+func TestRlpValueSlice(t *testing.T) {
+	val := []interface{}{
+		"value1",
+		"valeu2",
+		"value3",
+	}
+
+	value := NewRlpValue(val)
+	splitVal := value.AsSliceFrom(1)
+
+	if splitVal.Length() != 2 {
+		t.Error("AsSliceFrom: Expected len", 2, "got", splitVal.Length())
+	}
+
+	splitVal = value.AsSliceTo(2)
+	if splitVal.Length() != 2 {
+		t.Error("AsSliceTo: Expected len", 2, "got", splitVal.Length())
+	}
+
+	splitVal = value.AsSliceFromTo(1, 3)
+	if splitVal.Length() != 2 {
+		t.Error("AsSliceFromTo: Expected len", 2, "got", splitVal.Length())
+	}
+}
+
 func TestEncode(t *testing.T) {
 	strRes := "Cdog"
 

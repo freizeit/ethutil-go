@@ -14,7 +14,7 @@ type EthEncoder interface {
 	EncodeData(rlpData interface{}) []byte
 }
 type EthDecoder interface {
-	Get(idx int) *RlpDataAttribute
+	Get(idx int) *RlpValue
 }
 
 //////////////////////////////////////
@@ -35,28 +35,28 @@ func (coder *RlpEncoder) EncodeData(rlpData interface{}) []byte {
 // Data attributes are returned by the rlp decoder. The data attributes represents
 // one item within the rlp data structure. It's responsible for all the casting
 // It always returns something valid
-type RlpDataAttribute struct {
+type RlpValue struct {
 	dataAttrib interface{}
 	kind       reflect.Value
 }
 
-func Conv(attrib interface{}) *RlpDataAttribute {
-	return &RlpDataAttribute{dataAttrib: attrib, kind: reflect.ValueOf(attrib)}
+func Conv(attrib interface{}) *RlpValue {
+	return &RlpValue{dataAttrib: attrib, kind: reflect.ValueOf(attrib)}
 }
 
-func NewRlpDataAttribute(attrib interface{}) *RlpDataAttribute {
-	return &RlpDataAttribute{dataAttrib: attrib}
+func NewRlpValue(attrib interface{}) *RlpValue {
+	return &RlpValue{dataAttrib: attrib}
 }
 
-func (attr *RlpDataAttribute) Type() reflect.Kind {
+func (attr *RlpValue) Type() reflect.Kind {
 	return reflect.TypeOf(attr.dataAttrib).Kind()
 }
 
-func (attr *RlpDataAttribute) IsNil() bool {
+func (attr *RlpValue) IsNil() bool {
 	return attr.dataAttrib == nil
 }
 
-func (attr *RlpDataAttribute) Length() int {
+func (attr *RlpValue) Length() int {
 	//return attr.kind.Len()
 	if data, ok := attr.dataAttrib.([]interface{}); ok {
 		return len(data)
@@ -65,11 +65,11 @@ func (attr *RlpDataAttribute) Length() int {
 	return 0
 }
 
-func (attr *RlpDataAttribute) AsRaw() interface{} {
+func (attr *RlpValue) AsRaw() interface{} {
 	return attr.dataAttrib
 }
 
-func (attr *RlpDataAttribute) AsUint() uint64 {
+func (attr *RlpValue) AsUint() uint64 {
 	if value, ok := attr.dataAttrib.(uint8); ok {
 		return uint64(value)
 	} else if value, ok := attr.dataAttrib.(uint16); ok {
@@ -83,7 +83,7 @@ func (attr *RlpDataAttribute) AsUint() uint64 {
 	return 0
 }
 
-func (attr *RlpDataAttribute) AsByte() byte {
+func (attr *RlpValue) AsByte() byte {
 	if value, ok := attr.dataAttrib.(byte); ok {
 		return value
 	}
@@ -91,7 +91,7 @@ func (attr *RlpDataAttribute) AsByte() byte {
 	return 0x0
 }
 
-func (attr *RlpDataAttribute) AsBigInt() *big.Int {
+func (attr *RlpValue) AsBigInt() *big.Int {
 	if a, ok := attr.dataAttrib.([]byte); ok {
 		b := new(big.Int)
 		b.SetString(string(a), 0)
@@ -101,7 +101,7 @@ func (attr *RlpDataAttribute) AsBigInt() *big.Int {
 	return big.NewInt(0)
 }
 
-func (attr *RlpDataAttribute) AsString() string {
+func (attr *RlpValue) AsString() string {
 	if a, ok := attr.dataAttrib.([]byte); ok {
 		return string(a)
 	} else if a, ok := attr.dataAttrib.(string); ok {
@@ -113,7 +113,7 @@ func (attr *RlpDataAttribute) AsString() string {
 	return ""
 }
 
-func (attr *RlpDataAttribute) AsBytes() []byte {
+func (attr *RlpValue) AsBytes() []byte {
 	if a, ok := attr.dataAttrib.([]byte); ok {
 		return a
 	}
@@ -121,7 +121,7 @@ func (attr *RlpDataAttribute) AsBytes() []byte {
 	return make([]byte, 0)
 }
 
-func (attr *RlpDataAttribute) AsSlice() []interface{} {
+func (attr *RlpValue) AsSlice() []interface{} {
 	if d, ok := attr.dataAttrib.([]interface{}); ok {
 		return d
 	}
@@ -129,40 +129,58 @@ func (attr *RlpDataAttribute) AsSlice() []interface{} {
 	return []interface{}{}
 }
 
+func (attr *RlpValue) AsSliceFrom(from int) *RlpValue {
+	slice := attr.AsSlice()
+
+	return NewRlpValue(slice[from:])
+}
+
+func (attr *RlpValue) AsSliceTo(to int) *RlpValue {
+	slice := attr.AsSlice()
+
+	return NewRlpValue(slice[:to])
+}
+
+func (attr *RlpValue) AsSliceFromTo(from, to int) *RlpValue {
+	slice := attr.AsSlice()
+
+	return NewRlpValue(slice[from:to])
+}
+
 // Threat the attribute as a slice
-func (attr *RlpDataAttribute) Get(idx int) *RlpDataAttribute {
+func (attr *RlpValue) Get(idx int) *RlpValue {
 	if d, ok := attr.dataAttrib.([]interface{}); ok {
 		// Guard for oob
 		if len(d) < idx {
-			return NewRlpDataAttribute(nil)
+			return NewRlpValue(nil)
 		}
 
-		return NewRlpDataAttribute(d[idx])
+		return NewRlpValue(d[idx])
 	}
 
 	// If this wasn't a slice you probably shouldn't be using this function
-	return NewRlpDataAttribute(nil)
+	return NewRlpValue(nil)
 }
 
 type RlpDecoder struct {
 	rlpData interface{}
 }
 
-func NewRlpDecoder(rlpData []byte) *RlpDataAttribute {
+func NewRlpDecoder(rlpData []byte) *RlpValue {
 	//decoder := &RlpDecoder{}
 	// Decode the data
 
 	if len(rlpData) != 0 {
 		data, _ := Decode(rlpData, 0)
 		//decoder.rlpData = data
-		return NewRlpDataAttribute(data)
+		return NewRlpValue(data)
 	}
 
-	return NewRlpDataAttribute(nil)
+	return NewRlpValue(nil)
 }
 
-func (dec *RlpDecoder) Get(idx int) *RlpDataAttribute {
-	return NewRlpDataAttribute(dec.rlpData).Get(idx)
+func (dec *RlpDecoder) Get(idx int) *RlpValue {
+	return NewRlpValue(dec.rlpData).Get(idx)
 }
 
 /// Raw methods
