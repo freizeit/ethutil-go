@@ -6,12 +6,20 @@ import (
 	"path"
 )
 
+type LogType byte
+
+const (
+	LogTypeStdIn = 1
+	LogTypeFile  = 2
+)
+
 // Config struct isn't exposed
 type config struct {
 	Db  Database
 	Log *log.Logger
 
 	ExecPath string
+	Debug    bool
 }
 
 var Config *config
@@ -22,7 +30,7 @@ func ReadConfig() *config {
 		usr, _ := user.Current()
 		path := path.Join(usr.HomeDir, ".ethereum")
 
-		Config = &config{ExecPath: path}
+		Config = &config{ExecPath: path, Debug: true}
 	}
 
 	return Config

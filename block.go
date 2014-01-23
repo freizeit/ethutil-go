@@ -154,6 +154,14 @@ func (block *Block) PayFee(addr []byte, fee *big.Int) bool {
 	return true
 }
 
+func (block *Block) BlockInfo() BlockInfo {
+	bi := BlockInfo{}
+	data, _ := Config.Db.Get(append(block.Hash(), []byte("Info")...))
+	bi.RlpDecode(data)
+
+	return bi
+}
+
 // Returns a hash of the block
 func (block *Block) Hash() []byte {
 	return Sha256Bin(Encode(block.header(block.TxSha, block.UncleSha)))
