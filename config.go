@@ -20,6 +20,7 @@ type config struct {
 
 	ExecPath string
 	Debug    bool
+	Ver      string
 }
 
 var Config *config
@@ -30,7 +31,7 @@ func ReadConfig() *config {
 		usr, _ := user.Current()
 		path := path.Join(usr.HomeDir, ".ethereum")
 
-		Config = &config{ExecPath: path, Debug: true}
+		Config = &config{ExecPath: path, Debug: true, Ver: "0.0.1"}
 	}
 
 	return Config
