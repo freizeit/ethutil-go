@@ -57,13 +57,12 @@ func DecodeNode(data []byte) []string {
 
 // A (modified) Radix Trie implementation
 type Trie struct {
-	Root  string
-	RootT interface{}
-	db    Database
+	Root interface{}
+	db   Database
 }
 
-func NewTrie(db Database, Root string) *Trie {
-	return &Trie{db: db, Root: Root, RootT: Root}
+func NewTrie(db Database, Root interface{}) *Trie {
+	return &Trie{db: db, Root: Root}
 }
 
 /*
@@ -75,9 +74,9 @@ func (t *Trie) Update(key string, value string) {
 	t.Root = t.UpdateState(t.Root, k, value)
 }
 
-func (t *Trie) GetT(key string) string {
+func (t *Trie) Get(key string) string {
 	k := CompactHexDecode(key)
-	c := Conv(t.GetStateT(t.RootT, k))
+	c := Conv(t.GetStateT(t.Root, k))
 
 	return c.AsString()
 }
@@ -144,12 +143,12 @@ func (t *Trie) GetNodeT(node interface{}) *RlpValue {
 func (t *Trie) UpdateT(key string, value string) {
 	k := CompactHexDecode(key)
 
-	t.RootT = t.UpdateStateT(t.RootT, k, value)
+	t.Root = t.UpdateState(t.Root, k, value)
 }
 
-func (t *Trie) UpdateStateT(node interface{}, key []int, value string) interface{} {
+func (t *Trie) UpdateState(node interface{}, key []int, value string) interface{} {
 	if value != "" {
-		return t.InsertStateT(node, key, value)
+		return t.InsertState(node, key, value)
 	} else {
 		// delete it
 	}
@@ -157,7 +156,7 @@ func (t *Trie) UpdateStateT(node interface{}, key []int, value string) interface
 	return ""
 }
 
-func (t *Trie) PutT(node interface{}) interface{} {
+func (t *Trie) Put(node interface{}) interface{} {
 	enc := Encode(node)
 
 	if len(enc) >= 32 {
@@ -170,7 +169,7 @@ func (t *Trie) PutT(node interface{}) interface{} {
 
 	/*
 		TODO?
-			c := Conv(t.RootT)
+			c := Conv(t.Root)
 			fmt.Println(c.Type(), c.Length())
 			if c.Type() == reflect.String && c.AsString() == "" {
 				return enc
@@ -188,7 +187,7 @@ func EmptyStringSlice(l int) []interface{} {
 	return slice
 }
 
-func (t *Trie) InsertStateT(node interface{}, key []int, value interface{}) interface{} {
+func (t *Trie) InsertState(node interface{}, key []int, value interface{}) interface{} {
 	if len(key) == 0 {
 		return value
 	}
@@ -198,7 +197,7 @@ func (t *Trie) InsertStateT(node interface{}, key []int, value interface{}) inte
 	if node == nil || (n.Type() == reflect.String && (n.AsString() == "" || n.Get(0).IsNil())) {
 		newNode := []interface{}{CompactEncode(key), value}
 
-		return t.PutT(newNode)
+		return t.Put(newNode)
 	}
 
 	currentNode := t.GetNodeT(node)
@@ -211,25 +210,25 @@ func (t *Trie) InsertStateT(node interface{}, key []int, value interface{}) inte
 		// Matching key pair (ie. there's already an object with this key)
 		if CompareIntSlice(k, key) {
 			newNode := []interface{}{CompactEncode(key), value}
-			return t.PutT(newNode)
+			return t.Put(newNode)
 		}
 
 		var newHash interface{}
 		matchingLength := MatchingNibbleLength(key, k)
 		if matchingLength == len(k) {
 			// Insert the hash, creating a new node
-			newHash = t.InsertStateT(v, key[matchingLength:], value)
+			newHash = t.InsertState(v, key[matchingLength:], value)
 		} else {
 			// Expand the 2 length slice to a 17 length slice
-			oldNode := t.InsertStateT("", k[matchingLength+1:], v)
-			newNode := t.InsertStateT("", key[matchingLength+1:], value)
+			oldNode := t.InsertState("", k[matchingLength+1:], v)
+			newNode := t.InsertState("", key[matchingLength+1:], value)
 			// Create an expanded slice
 			scaledSlice := EmptyStringSlice(17)
 			// Set the copied and new node
 			scaledSlice[k[matchingLength]] = oldNode
 			scaledSlice[key[matchingLength]] = newNode
 
-			newHash = t.PutT(scaledSlice)
+			newHash = t.Put(scaledSlice)
 		}
 
 		if matchingLength == 0 {
@@ -237,7 +236,7 @@ func (t *Trie) InsertStateT(node interface{}, key []int, value interface{}) inte
 			return newHash
 		} else {
 			newNode := []interface{}{CompactEncode(key[:matchingLength]), newHash}
-			return t.PutT(newNode)
+			return t.Put(newNode)
 		}
 	} else {
 		// Copy the current node over to the new node and replace the first nibble in the key
@@ -250,158 +249,18 @@ func (t *Trie) InsertStateT(node interface{}, key []int, value interface{}) inte
 			}
 		}
 
-		newNode[key[0]] = t.InsertStateT(currentNode.Get(key[0]).AsRaw(), key[1:], value)
+		newNode[key[0]] = t.InsertState(currentNode.Get(key[0]).AsRaw(), key[1:], value)
 
-		return t.PutT(newNode)
+		return t.Put(newNode)
 	}
 
 	return ""
 }
 
-//////////////////
-// TODO CLEAN THIS STUFF YO
+// Simple compare function which creates a rlp value out of the evaluated objects
+func (t *Trie) Cmp(trie *Trie) bool {
+	a := NewRlpValue(t.Root)
+	b := NewRlpValue(t.Root)
 
-// Wrapper around the regular db "Put" which generates a key and value
-func (t *Trie) Put(node interface{}) []byte {
-	enc := Encode(node)
-	var sha []byte
-	sha = Sha256Bin(enc)
-
-	t.db.Put([]byte(sha), enc)
-
-	return sha
-}
-
-func (t *Trie) InsertState(node string, key []int, value string) string {
-	if len(key) == 0 {
-		return value
-	}
-
-	// New node
-	if node == "" {
-		newNode := []string{CompactEncode(key), value}
-
-		return string(t.Put(newNode))
-	}
-
-	// Fetch the encoded node from the db
-	n, err := t.db.Get([]byte(node))
-	if err != nil {
-		fmt.Println("Error InsertState", err)
-		return ""
-	}
-
-	// Decode it
-	currentNode := DecodeNode(n)
-	// Check for "special" 2 slice type node
-	if len(currentNode) == 2 {
-		// Decode the key
-		k := CompactDecode(currentNode[0])
-		v := currentNode[1]
-
-		// Matching key pair (ie. there's already an object with this key)
-		if CompareIntSlice(k, key) {
-			return string(t.Put([]string{CompactEncode(key), value}))
-		}
-
-		var newHash string
-		matchingLength := MatchingNibbleLength(key, k)
-		if matchingLength == len(k) {
-			// Insert the hash, creating a new node
-			newHash = t.InsertState(v, key[matchingLength:], value)
-		} else {
-			// Expand the 2 length slice to a 17 length slice
-			oldNode := t.InsertState("", k[matchingLength+1:], v)
-			newNode := t.InsertState("", key[matchingLength+1:], value)
-			// Create an expanded slice
-			scaledSlice := make([]string, 17)
-			// Set the copied and new node
-			scaledSlice[k[matchingLength]] = oldNode
-			scaledSlice[key[matchingLength]] = newNode
-
-			newHash = string(t.Put(scaledSlice))
-		}
-
-		if matchingLength == 0 {
-			// End of the chain, return
-			return newHash
-		} else {
-			newNode := []string{CompactEncode(key[:matchingLength]), newHash}
-			return string(t.Put(newNode))
-		}
-	} else {
-		// Copy the current node over to the new node and replace the first nibble in the key
-		newNode := make([]string, 17)
-		copy(newNode, currentNode)
-		newNode[key[0]] = t.InsertState(currentNode[key[0]], key[1:], value)
-
-		return string(t.Put(newNode))
-	}
-
-	return ""
-}
-func (t *Trie) Get(key string) string {
-	k := CompactHexDecode(key)
-
-	return t.GetState(t.Root, k)
-}
-
-/*
- * State functions (shouldn't be needed directly).
- */
-
-// Helper function for printing a node (using fetch, decode and slice printing)
-func (t *Trie) PrintNode(n string) {
-	data, _ := t.db.Get([]byte(n))
-	d := DecodeNode(data)
-	PrintSlice(d)
-}
-
-// Returns the state of an object
-func (t *Trie) GetState(node string, key []int) string {
-	// Return the node if key is empty (= found)
-	if len(key) == 0 || node == "" {
-		return node
-	}
-
-	// Fetch the encoded node from the db
-	n, err := t.db.Get([]byte(node))
-	if err != nil {
-		fmt.Println("Error in GetState for node", node, "with key", key)
-		return ""
-	}
-
-	// Decode it
-	currentNode := DecodeNode(n)
-
-	if len(currentNode) == 0 {
-		return ""
-	} else if len(currentNode) == 2 {
-		// Decode the key
-		k := CompactDecode(currentNode[0])
-		v := currentNode[1]
-
-		if len(key) >= len(k) && CompareIntSlice(k, key[:len(k)]) {
-			return t.GetState(v, key[len(k):])
-		} else {
-			return ""
-		}
-	} else if len(currentNode) == 17 {
-		return t.GetState(currentNode[key[0]], key[1:])
-	}
-
-	// It shouldn't come this far
-	fmt.Println("GetState unexpected return")
-	return ""
-}
-
-// Inserts a new sate or delete a state based on the value
-func (t *Trie) UpdateState(node string, key []int, value string) string {
-	if value != "" {
-		return t.InsertState(node, key, value)
-	} else {
-		// delete it
-	}
-
-	return ""
+	return a.Cmp(b)
 }
