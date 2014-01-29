@@ -162,6 +162,10 @@ func (attr *RlpValue) Get(idx int) *RlpValue {
 	return NewRlpValue(nil)
 }
 
+func (attr *RlpValue) Cmp(o *RlpValue) bool {
+	return reflect.DeepEqual(attr.dataAttrib, o.dataAttrib)
+}
+
 type RlpDecoder struct {
 	rlpData interface{}
 }
