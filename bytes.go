@@ -10,7 +10,7 @@ func NumberToBytes(num interface{}, bits int) []byte {
 	buf := new(bytes.Buffer)
 	err := binary.Write(buf, binary.BigEndian, num)
 	if err != nil {
-		fmt.Println("binary.Write failed:", err)
+		fmt.Println("NumberToBytes failed:", err)
 	}
 
 	return buf.Bytes()[buf.Len()-(bits/8):]
@@ -26,7 +26,7 @@ func BytesToNumber(b []byte) uint64 {
 	buf := bytes.NewReader(data)
 	err := binary.Read(buf, binary.BigEndian, &number)
 	if err != nil {
-		fmt.Println("binary.Read failed:", err)
+		fmt.Println("BytesToNumber failed:", err)
 	}
 
 	return number
