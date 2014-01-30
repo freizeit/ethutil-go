@@ -40,6 +40,10 @@ type RlpValue struct {
 	kind       reflect.Value
 }
 
+func (val *RlpValue) String() string {
+	return fmt.Sprintf("%q", val.dataAttrib)
+}
+
 func Conv(attrib interface{}) *RlpValue {
 	return &RlpValue{dataAttrib: attrib, kind: reflect.ValueOf(attrib)}
 }
@@ -151,8 +155,12 @@ func (attr *RlpValue) AsSliceFromTo(from, to int) *RlpValue {
 func (attr *RlpValue) Get(idx int) *RlpValue {
 	if d, ok := attr.dataAttrib.([]interface{}); ok {
 		// Guard for oob
-		if len(d) < idx {
+		if len(d) <= idx {
 			return NewRlpValue(nil)
+		}
+
+		if idx < 0 {
+			panic("negative idx for Rlp Get")
 		}
 
 		return NewRlpValue(d[idx])
