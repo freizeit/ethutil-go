@@ -12,12 +12,6 @@ func Uitoa(i uint32) string {
 	return strconv.FormatUint(uint64(i), 10)
 }
 
-func Sha256Hex(data []byte) string {
-	hash := sha256.Sum256(data)
-
-	return hex.EncodeToString(hash[:])
-}
-
 func Sha256Bin(data []byte) []byte {
 	hash := sha256.Sum256(data)
 
@@ -33,6 +27,7 @@ func Ripemd160(data []byte) []byte {
 
 func Sha3Bin(data []byte) []byte {
 	d := sha3.NewKeccak256()
+	d.Reset()
 	d.Write(data)
 
 	return d.Sum(nil)

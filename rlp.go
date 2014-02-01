@@ -32,128 +32,128 @@ func (coder *RlpEncoder) EncodeData(rlpData interface{}) []byte {
 	return Encode(rlpData)
 }
 
-// Data attributes are returned by the rlp decoder. The data attributes represents
+// Data rlpValueibutes are returned by the rlp decoder. The data rlpValueibutes represents
 // one item within the rlp data structure. It's responsible for all the casting
-// It always returns something valid
+// It always returns something rlpValueid
 type RlpValue struct {
-	dataAttrib interface{}
-	kind       reflect.Value
+	Value interface{}
+	kind  reflect.Value
 }
 
-func (val *RlpValue) String() string {
-	return fmt.Sprintf("%q", val.dataAttrib)
+func (rlpValue *RlpValue) String() string {
+	return fmt.Sprintf("%q", rlpValue.Value)
 }
 
-func Conv(attrib interface{}) *RlpValue {
-	return &RlpValue{dataAttrib: attrib, kind: reflect.ValueOf(attrib)}
+func Conv(rlpValueib interface{}) *RlpValue {
+	return &RlpValue{Value: rlpValueib, kind: reflect.ValueOf(rlpValueib)}
 }
 
-func NewRlpValue(attrib interface{}) *RlpValue {
-	return &RlpValue{dataAttrib: attrib}
+func NewRlpValue(rlpValueib interface{}) *RlpValue {
+	return &RlpValue{Value: rlpValueib}
 }
 
-func (attr *RlpValue) Type() reflect.Kind {
-	return reflect.TypeOf(attr.dataAttrib).Kind()
+func (rlpValue *RlpValue) Type() reflect.Kind {
+	return reflect.TypeOf(rlpValue.Value).Kind()
 }
 
-func (attr *RlpValue) IsNil() bool {
-	return attr.dataAttrib == nil
+func (rlpValue *RlpValue) IsNil() bool {
+	return rlpValue.Value == nil
 }
 
-func (attr *RlpValue) Length() int {
-	//return attr.kind.Len()
-	if data, ok := attr.dataAttrib.([]interface{}); ok {
+func (rlpValue *RlpValue) Length() int {
+	//return rlpValue.kind.Len()
+	if data, ok := rlpValue.Value.([]interface{}); ok {
 		return len(data)
 	}
 
 	return 0
 }
 
-func (attr *RlpValue) AsRaw() interface{} {
-	return attr.dataAttrib
+func (rlpValue *RlpValue) AsRaw() interface{} {
+	return rlpValue.Value
 }
 
-func (attr *RlpValue) AsUint() uint64 {
-	if value, ok := attr.dataAttrib.(uint8); ok {
-		return uint64(value)
-	} else if value, ok := attr.dataAttrib.(uint16); ok {
-		return uint64(value)
-	} else if value, ok := attr.dataAttrib.(uint32); ok {
-		return uint64(value)
-	} else if value, ok := attr.dataAttrib.(uint64); ok {
-		return value
+func (rlpValue *RlpValue) AsUint() uint64 {
+	if Value, ok := rlpValue.Value.(uint8); ok {
+		return uint64(Value)
+	} else if Value, ok := rlpValue.Value.(uint16); ok {
+		return uint64(Value)
+	} else if Value, ok := rlpValue.Value.(uint32); ok {
+		return uint64(Value)
+	} else if Value, ok := rlpValue.Value.(uint64); ok {
+		return Value
 	}
 
 	return 0
 }
 
-func (attr *RlpValue) AsByte() byte {
-	if value, ok := attr.dataAttrib.(byte); ok {
-		return value
+func (rlpValue *RlpValue) AsByte() byte {
+	if Value, ok := rlpValue.Value.(byte); ok {
+		return Value
 	}
 
 	return 0x0
 }
 
-func (attr *RlpValue) AsBigInt() *big.Int {
-	if a, ok := attr.dataAttrib.([]byte); ok {
+func (rlpValue *RlpValue) AsBigInt() *big.Int {
+	if a, ok := rlpValue.Value.([]byte); ok {
 		b := new(big.Int)
-		b.SetString(string(a), 0)
+		b.SetBytes(a)
 		return b
 	}
 
 	return big.NewInt(0)
 }
 
-func (attr *RlpValue) AsString() string {
-	if a, ok := attr.dataAttrib.([]byte); ok {
+func (rlpValue *RlpValue) AsString() string {
+	if a, ok := rlpValue.Value.([]byte); ok {
 		return string(a)
-	} else if a, ok := attr.dataAttrib.(string); ok {
+	} else if a, ok := rlpValue.Value.(string); ok {
 		return a
 	} else {
-		//panic(fmt.Sprintf("not string %T: %v", attr.dataAttrib, attr.dataAttrib))
+		//panic(fmt.Sprintf("not string %T: %v", rlpValue.Value, rlpValue.Value))
 	}
 
 	return ""
 }
 
-func (attr *RlpValue) AsBytes() []byte {
-	if a, ok := attr.dataAttrib.([]byte); ok {
+func (rlpValue *RlpValue) AsBytes() []byte {
+	if a, ok := rlpValue.Value.([]byte); ok {
 		return a
 	}
 
 	return make([]byte, 0)
 }
 
-func (attr *RlpValue) AsSlice() []interface{} {
-	if d, ok := attr.dataAttrib.([]interface{}); ok {
+func (rlpValue *RlpValue) AsSlice() []interface{} {
+	if d, ok := rlpValue.Value.([]interface{}); ok {
 		return d
 	}
 
 	return []interface{}{}
 }
 
-func (attr *RlpValue) AsSliceFrom(from int) *RlpValue {
-	slice := attr.AsSlice()
+func (rlpValue *RlpValue) AsSliceFrom(from int) *RlpValue {
+	slice := rlpValue.AsSlice()
 
 	return NewRlpValue(slice[from:])
 }
 
-func (attr *RlpValue) AsSliceTo(to int) *RlpValue {
-	slice := attr.AsSlice()
+func (rlpValue *RlpValue) AsSliceTo(to int) *RlpValue {
+	slice := rlpValue.AsSlice()
 
 	return NewRlpValue(slice[:to])
 }
 
-func (attr *RlpValue) AsSliceFromTo(from, to int) *RlpValue {
-	slice := attr.AsSlice()
+func (rlpValue *RlpValue) AsSliceFromTo(from, to int) *RlpValue {
+	slice := rlpValue.AsSlice()
 
 	return NewRlpValue(slice[from:to])
 }
 
-// Threat the attribute as a slice
-func (attr *RlpValue) Get(idx int) *RlpValue {
-	if d, ok := attr.dataAttrib.([]interface{}); ok {
+// Threat the rlpValueibute as a slice
+func (rlpValue *RlpValue) Get(idx int) *RlpValue {
+	if d, ok := rlpValue.Value.([]interface{}); ok {
 		// Guard for oob
 		if len(d) <= idx {
 			return NewRlpValue(nil)
@@ -170,29 +170,21 @@ func (attr *RlpValue) Get(idx int) *RlpValue {
 	return NewRlpValue(nil)
 }
 
-func (attr *RlpValue) Cmp(o *RlpValue) bool {
-	return reflect.DeepEqual(attr.dataAttrib, o.dataAttrib)
+func (rlpValue *RlpValue) Cmp(o *RlpValue) bool {
+	return reflect.DeepEqual(rlpValue.Value, o.Value)
 }
 
-type RlpDecoder struct {
-	rlpData interface{}
+func (rlpValue *RlpValue) Encode() []byte {
+	return Encode(rlpValue.Value)
 }
 
-func NewRlpDecoder(rlpData []byte) *RlpValue {
-	//decoder := &RlpDecoder{}
-	// Decode the data
-
+func NewRlpValueFromBytes(rlpData []byte) *RlpValue {
 	if len(rlpData) != 0 {
 		data, _ := Decode(rlpData, 0)
-		//decoder.rlpData = data
 		return NewRlpValue(data)
 	}
 
 	return NewRlpValue(nil)
-}
-
-func (dec *RlpDecoder) Get(idx int) *RlpValue {
-	return NewRlpValue(dec.rlpData).Get(idx)
 }
 
 /// Raw methods
@@ -219,6 +211,8 @@ func ToBinarySlice(n uint64, length uint64) []uint64 {
 	return slice
 }
 
+// RLP Encoding/Decoding methods
+
 func ToBin(n uint64, length uint64) string {
 	var buf bytes.Buffer
 	for _, val := range ToBinarySlice(n, length) {
@@ -235,6 +229,11 @@ func FromBin(data []byte) uint64 {
 
 	return FromBin(data[:len(data)-1])*256 + uint64(data[len(data)-1])
 }
+
+const (
+	RlpEmptyList = 0x80
+	RlpEmptyStr  = 0x40
+)
 
 func Decode(data []byte, pos uint64) (interface{}, uint64) {
 	if pos > uint64(len(data)-1) {
@@ -303,11 +302,13 @@ func Encode(object interface{}) []byte {
 		switch t := object.(type) {
 		case int:
 			buff.Write(Encode(uint32(t)))
-		case uint32, uint64:
+		case uint16, uint32, uint64, int64, int32, int16, int8:
 			var num uint64
 			if _num, ok := t.(uint64); ok {
 				num = _num
 			} else if _num, ok := t.(uint32); ok {
+				num = uint64(_num)
+			} else if _num, ok := t.(uint16); ok {
 				num = uint64(_num)
 			}
 
@@ -323,7 +324,7 @@ func Encode(object interface{}) []byte {
 			}
 
 		case *big.Int:
-			buff.Write(Encode(t.String()))
+			buff.Write(Encode(string(t.Bytes())))
 
 		case string:
 			if len(t) < 56 {
@@ -365,8 +366,8 @@ func Encode(object interface{}) []byte {
 			}
 		}
 	} else {
-		// Write an empty string if the object was nil
-		buff.Write(Encode(""))
+		// Empty list for nil
+		buff.WriteByte(0x80)
 	}
 
 	return buff.Bytes()
