@@ -187,6 +187,25 @@ func NewRlpValueFromBytes(rlpData []byte) *RlpValue {
 	return NewRlpValue(nil)
 }
 
+// RlpValue value setters
+// An empty rlp value is always a list
+func EmptyRlpValue() *RlpValue {
+	return NewRlpValue([]interface{}{})
+}
+
+func (rlpValue *RlpValue) AppendList() *RlpValue {
+	list := EmptyRlpValue()
+	rlpValue.Value = append(rlpValue.AsSlice(), list)
+
+	return list
+}
+
+func (rlpValue *RlpValue) Append(v interface{}) *RlpValue {
+	rlpValue.Value = append(rlpValue.AsSlice(), v)
+
+	return rlpValue
+}
+
 /// Raw methods
 func BinaryLength(n uint64) uint64 {
 	if n == 0 {
@@ -300,6 +319,8 @@ func Encode(object interface{}) []byte {
 
 	if object != nil {
 		switch t := object.(type) {
+		case *RlpValue:
+			buff.Write(Encode(t.AsRaw()))
 		case int:
 			buff.Write(Encode(uint32(t)))
 		case uint16, uint32, uint64, int64, int32, int16, int8:

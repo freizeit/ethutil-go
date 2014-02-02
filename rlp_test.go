@@ -1,9 +1,22 @@
 package ethutil
 
 import (
+	"bytes"
 	"fmt"
 	"testing"
 )
+
+func TestRlpValueEncoding(t *testing.T) {
+	val := EmptyRlpValue()
+	val.AppendList().Append(1).Append(2).Append(3)
+	val.Append("4").AppendList().Append(5)
+
+	res := val.Encode()
+	exp := Encode([]interface{}{[]interface{}{1, 2, 3}, "4", []interface{}{5}})
+	if bytes.Compare(res, exp) != 0 {
+		t.Errorf("expected %q, got %q", res, exp)
+	}
+}
 
 func TestRlpValueSlice(t *testing.T) {
 	val := []interface{}{
