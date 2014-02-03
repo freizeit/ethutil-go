@@ -32,6 +32,15 @@ func ReadConfig() *config {
 		usr, _ := user.Current()
 		path := path.Join(usr.HomeDir, ".ethereum")
 
+		//Check if the logging directory already exists, create it if not
+		_, err := os.Stat(path)
+		if err != nil {
+			if os.IsNotExist(err) {
+				log.Printf("Debug logging directory %s doesn't exist, creating it", path)
+				os.Mkdir(path, 0777)
+			}
+		}
+
 		Config = &config{ExecPath: path, Debug: true, Ver: "0.0.1"}
 		Config.Log = NewLogger(LogFile|LogStd, 0)
 	}
