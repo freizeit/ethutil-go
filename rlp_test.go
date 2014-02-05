@@ -19,39 +19,39 @@ func TestRlpValueEncoding(t *testing.T) {
 	}
 }
 
-func TestRlpValueSlice(t *testing.T) {
+func TestValueSlice(t *testing.T) {
 	val := []interface{}{
 		"value1",
 		"valeu2",
 		"value3",
 	}
 
-	value := NewRlpValue(val)
-	splitVal := value.AsSliceFrom(1)
+	value := NewValue(val)
+	splitVal := value.SliceFrom(1)
 
 	if splitVal.Length() != 2 {
-		t.Error("AsSliceFrom: Expected len", 2, "got", splitVal.Length())
+		t.Error("SliceFrom: Expected len", 2, "got", splitVal.Length())
 	}
 
-	splitVal = value.AsSliceTo(2)
+	splitVal = value.SliceTo(2)
 	if splitVal.Length() != 2 {
-		t.Error("AsSliceTo: Expected len", 2, "got", splitVal.Length())
+		t.Error("SliceTo: Expected len", 2, "got", splitVal.Length())
 	}
 
-	splitVal = value.AsSliceFromTo(1, 3)
+	splitVal = value.SliceFromTo(1, 3)
 	if splitVal.Length() != 2 {
-		t.Error("AsSliceFromTo: Expected len", 2, "got", splitVal.Length())
+		t.Error("SliceFromTo: Expected len", 2, "got", splitVal.Length())
 	}
 }
 
 func TestValue(t *testing.T) {
 	value := NewValueFromBytes([]byte("\xc4\x83dog\x83god\x83cat\x01"))
-	if value.Get(0).AsString() != "dog" {
-		t.Errorf("expected '%v', got '%v'", value.Get(0).AsString(), "dog")
+	if value.Get(0).Str() != "dog" {
+		t.Errorf("expected '%v', got '%v'", value.Get(0).Str(), "dog")
 	}
 
-	if value.Get(3).AsUint() != 1 {
-		t.Errorf("expected '%v', got '%v'", value.Get(3).AsUint(), 1)
+	if value.Get(3).Uint() != 1 {
+		t.Errorf("expected '%v', got '%v'", value.Get(3).Uint(), 1)
 	}
 }
 

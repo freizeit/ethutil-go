@@ -45,11 +45,11 @@ func (val *Value) Length() int {
 	return 0
 }
 
-func (val *Value) AsRaw() interface{} {
+func (val *Value) Raw() interface{} {
 	return val.Val
 }
 
-func (val *Value) AsUint() uint64 {
+func (val *Value) Uint() uint64 {
 	if Val, ok := val.Val.(uint8); ok {
 		return uint64(Val)
 	} else if Val, ok := val.Val.(uint16); ok {
@@ -63,7 +63,7 @@ func (val *Value) AsUint() uint64 {
 	return 0
 }
 
-func (val *Value) AsByte() byte {
+func (val *Value) Byte() byte {
 	if Val, ok := val.Val.(byte); ok {
 		return Val
 	}
@@ -71,7 +71,7 @@ func (val *Value) AsByte() byte {
 	return 0x0
 }
 
-func (val *Value) AsBigInt() *big.Int {
+func (val *Value) BigInt() *big.Int {
 	if a, ok := val.Val.([]byte); ok {
 		b := new(big.Int)
 		b.SetBytes(a)
@@ -81,7 +81,7 @@ func (val *Value) AsBigInt() *big.Int {
 	return big.NewInt(0)
 }
 
-func (val *Value) AsString() string {
+func (val *Value) Str() string {
 	if a, ok := val.Val.([]byte); ok {
 		return string(a)
 	} else if a, ok := val.Val.(string); ok {
@@ -91,7 +91,7 @@ func (val *Value) AsString() string {
 	return ""
 }
 
-func (val *Value) AsBytes() []byte {
+func (val *Value) Bytes() []byte {
 	if a, ok := val.Val.([]byte); ok {
 		return a
 	}
@@ -99,7 +99,7 @@ func (val *Value) AsBytes() []byte {
 	return make([]byte, 0)
 }
 
-func (val *Value) AsSlice() []interface{} {
+func (val *Value) Slice() []interface{} {
 	if d, ok := val.Val.([]interface{}); ok {
 		return d
 	}
@@ -107,20 +107,20 @@ func (val *Value) AsSlice() []interface{} {
 	return []interface{}{}
 }
 
-func (val *Value) AsSliceFrom(from int) *Value {
-	slice := val.AsSlice()
+func (val *Value) SliceFrom(from int) *Value {
+	slice := val.Slice()
 
 	return NewValue(slice[from:])
 }
 
-func (val *Value) AsSliceTo(to int) *Value {
-	slice := val.AsSlice()
+func (val *Value) SliceTo(to int) *Value {
+	slice := val.Slice()
 
 	return NewValue(slice[:to])
 }
 
-func (val *Value) AsSliceFromTo(from, to int) *Value {
-	slice := val.AsSlice()
+func (val *Value) SliceFromTo(from, to int) *Value {
+	slice := val.Slice()
 
 	return NewValue(slice[from:to])
 }
@@ -172,13 +172,13 @@ func EmptyValue() *Value {
 
 func (val *Value) AppendList() *Value {
 	list := EmptyValue()
-	val.Val = append(val.AsSlice(), list)
+	val.Val = append(val.Slice(), list)
 
 	return list
 }
 
 func (val *Value) Append(v interface{}) *Value {
-	val.Val = append(val.AsSlice(), v)
+	val.Val = append(val.Slice(), v)
 
 	return val
 }
