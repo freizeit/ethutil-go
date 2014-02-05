@@ -207,41 +207,7 @@ func (rlpValue *RlpValue) Append(v interface{}) *RlpValue {
 	return rlpValue
 }
 
-/// Raw methods
-func BinaryLength(n uint64) uint64 {
-	if n == 0 {
-		return 0
-	}
-
-	return 1 + BinaryLength(n/256)
-}
-
-func ToBinarySlice(n uint64, length uint64) []uint64 {
-	if length == 0 {
-		length = BinaryLength(n)
-	}
-
-	if n == 0 {
-		return []uint64{}
-	}
-
-	slice := ToBinarySlice(n/256, 0)
-	slice = append(slice, n%256)
-
-	return slice
-}
-
-// RLP Encoding/Decoding methods
-
-func ToBin(n uint64, length uint64) []byte {
-	var buf bytes.Buffer
-	for _, val := range ToBinarySlice(n, length) {
-		buf.WriteByte(byte(val))
-	}
-
-	return buf.Bytes()
-}
-
+/*
 func FromBin(data []byte) uint64 {
 	if len(data) == 0 {
 		return 0
@@ -249,12 +215,15 @@ func FromBin(data []byte) uint64 {
 
 	return FromBin(data[:len(data)-1])*256 + uint64(data[len(data)-1])
 }
+*/
 
 const (
 	RlpEmptyList = 0x80
 	RlpEmptyStr  = 0x40
 )
 
+// TODO Use a bytes.Buffer instead of a raw byte slice.
+// Cleaner code, and use draining instead of seeking the next bytes to read
 func Decode(data []byte, pos uint64) (interface{}, uint64) {
 	if pos > uint64(len(data)-1) {
 		log.Println(data)
@@ -274,7 +243,12 @@ func Decode(data []byte, pos uint64) (interface{}, uint64) {
 
 	case char <= 0xbf:
 		b := uint64(data[pos]) - 0xb8
-		b2 := uint64(FromBin(data[pos+1 : pos+1+b]))
+
+		buf := bytes.NewBuffer(data[pos+1 : pos+1+b])
+		var b2 uint64
+		binary.Read(buf, binary.BigEndian, &b2)
+
+		//b2 := uint64(FromBin(data[pos+1 : pos+1+b]))
 
 		return data[pos+1+b : pos+1+b+b2], pos + 1 + b + b2
 
@@ -285,9 +259,12 @@ func Decode(data []byte, pos uint64) (interface{}, uint64) {
 		for i := uint64(0); i < b; {
 			var obj interface{}
 
+			// Get the next item in the data list and append it
 			obj, prevPos = Decode(data, pos)
 			slice = append(slice, obj)
 
+			// Increment i by the amount bytes read in the previous
+			// read
 			i += (prevPos - pos)
 			pos = prevPos
 		}
@@ -358,21 +335,9 @@ func Encode(object interface{}) []byte {
 				var b bytes.Buffer
 				binary.Write(&b, binary.BigEndian, len(t))
 				buff.Write(append(append([]byte{byte(len(b.Bytes()) + 0xb7)}, b.Bytes()...), t...))
-
-				//b2 := ToBin(uint64(len(t)), 0)
-				//buff.Write(append(append([]byte{byte(len(b2) + 0xb7)}, b2...), t...))
 			}
 		case string:
 			buff.Write(Encode([]byte(t)))
-			/*
-				if len(t) < 56 {
-					buff.Write(append([]byte{byte(len(t) + 0x80)}, t...))
-				} else {
-					b2 := ToBin(uint64(len(t)), 0)
-					buff.Write(append(append([]byte{byte(len(b2) + 0xb7)}, b2...), t...))
-				}
-			*/
-
 		case []interface{}:
 			// Inline function for writing the slice header
 			WriteSliceHeader := func(length int) {
