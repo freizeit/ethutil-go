@@ -1,0 +1,184 @@
+package ethutil
+
+import (
+	"fmt"
+	"math/big"
+	"reflect"
+)
+
+// Data values are returned by the rlp decoder. The data values represents
+// one item within the rlp data structure. It's responsible for all the casting
+// It always returns something valid
+type Value struct {
+	Val  interface{}
+	kind reflect.Value
+}
+
+func (val *Value) String() string {
+	return fmt.Sprintf("%q", val.Val)
+}
+
+/*
+func Conv(val interface{}) *Value {
+	return &Value{Val: val, kind: reflect.ValueOf(val)}
+}
+*/
+
+func NewValue(val interface{}) *Value {
+	return &Value{Val: val}
+}
+
+func (val *Value) Type() reflect.Kind {
+	return reflect.TypeOf(val.Val).Kind()
+}
+
+func (val *Value) IsNil() bool {
+	return val.Val == nil
+}
+
+func (val *Value) Length() int {
+	//return val.kind.Len()
+	if data, ok := val.Val.([]interface{}); ok {
+		return len(data)
+	}
+
+	return 0
+}
+
+func (val *Value) AsRaw() interface{} {
+	return val.Val
+}
+
+func (val *Value) AsUint() uint64 {
+	if Val, ok := val.Val.(uint8); ok {
+		return uint64(Val)
+	} else if Val, ok := val.Val.(uint16); ok {
+		return uint64(Val)
+	} else if Val, ok := val.Val.(uint32); ok {
+		return uint64(Val)
+	} else if Val, ok := val.Val.(uint64); ok {
+		return Val
+	}
+
+	return 0
+}
+
+func (val *Value) AsByte() byte {
+	if Val, ok := val.Val.(byte); ok {
+		return Val
+	}
+
+	return 0x0
+}
+
+func (val *Value) AsBigInt() *big.Int {
+	if a, ok := val.Val.([]byte); ok {
+		b := new(big.Int)
+		b.SetBytes(a)
+		return b
+	}
+
+	return big.NewInt(0)
+}
+
+func (val *Value) AsString() string {
+	if a, ok := val.Val.([]byte); ok {
+		return string(a)
+	} else if a, ok := val.Val.(string); ok {
+		return a
+	}
+
+	return ""
+}
+
+func (val *Value) AsBytes() []byte {
+	if a, ok := val.Val.([]byte); ok {
+		return a
+	}
+
+	return make([]byte, 0)
+}
+
+func (val *Value) AsSlice() []interface{} {
+	if d, ok := val.Val.([]interface{}); ok {
+		return d
+	}
+
+	return []interface{}{}
+}
+
+func (val *Value) AsSliceFrom(from int) *Value {
+	slice := val.AsSlice()
+
+	return NewValue(slice[from:])
+}
+
+func (val *Value) AsSliceTo(to int) *Value {
+	slice := val.AsSlice()
+
+	return NewValue(slice[:to])
+}
+
+func (val *Value) AsSliceFromTo(from, to int) *Value {
+	slice := val.AsSlice()
+
+	return NewValue(slice[from:to])
+}
+
+// Threat the value as a slice
+func (val *Value) Get(idx int) *Value {
+	if d, ok := val.Val.([]interface{}); ok {
+		// Guard for oob
+		if len(d) <= idx {
+			return NewValue(nil)
+		}
+
+		if idx < 0 {
+			panic("negative idx for Rlp Get")
+		}
+
+		return NewValue(d[idx])
+	}
+
+	// If this wasn't a slice you probably shouldn't be using this function
+	return NewValue(nil)
+}
+
+func (val *Value) Cmp(o *Value) bool {
+	return reflect.DeepEqual(val.Val, o.Val)
+}
+
+func (val *Value) Encode() []byte {
+	return Encode(val.Val)
+}
+
+func NewValueFromBytes(rlpData []byte) *Value {
+	if len(rlpData) != 0 {
+		data, _ := Decode(rlpData, 0)
+		return NewValue(data)
+	}
+
+	return NewValue(nil)
+}
+
+// Value setters
+func NewSliceValue() *Value {
+	return NewValue([]interface{}{})
+}
+
+func EmptyValue() *Value {
+	return NewValue([]interface{}{})
+}
+
+func (val *Value) AppendList() *Value {
+	list := EmptyValue()
+	val.Val = append(val.AsSlice(), list)
+
+	return list
+}
+
+func (val *Value) Append(v interface{}) *Value {
+	val.Val = append(val.AsSlice(), v)
+
+	return val
+}

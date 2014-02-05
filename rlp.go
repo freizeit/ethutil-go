@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"log"
-	"math"
+	_ "math"
 	"math/big"
 	"reflect"
 )
@@ -32,7 +32,7 @@ func (coder *RlpEncoder) EncodeData(rlpData interface{}) []byte {
 	return Encode(rlpData)
 }
 
-// Data rlpValueibutes are returned by the rlp decoder. The data rlpValueibutes represents
+// Data rlpValueutes are returned by the rlp decoder. The data rlpValueutes represents
 // one item within the rlp data structure. It's responsible for all the casting
 // It always returns something rlpValueid
 type RlpValue struct {
@@ -44,12 +44,12 @@ func (rlpValue *RlpValue) String() string {
 	return fmt.Sprintf("%q", rlpValue.Value)
 }
 
-func Conv(rlpValueib interface{}) *RlpValue {
-	return &RlpValue{Value: rlpValueib, kind: reflect.ValueOf(rlpValueib)}
+func Conv(rlpValue interface{}) *RlpValue {
+	return &RlpValue{Value: rlpValue, kind: reflect.ValueOf(rlpValue)}
 }
 
-func NewRlpValue(rlpValueib interface{}) *RlpValue {
-	return &RlpValue{Value: rlpValueib}
+func NewRlpValue(rlpValue interface{}) *RlpValue {
+	return &RlpValue{Value: rlpValue}
 }
 
 func (rlpValue *RlpValue) Type() reflect.Kind {
@@ -151,7 +151,7 @@ func (rlpValue *RlpValue) AsSliceFromTo(from, to int) *RlpValue {
 	return NewRlpValue(slice[from:to])
 }
 
-// Threat the rlpValueibute as a slice
+// Threat the rlpValueute as a slice
 func (rlpValue *RlpValue) Get(idx int) *RlpValue {
 	if d, ok := rlpValue.Value.([]interface{}); ok {
 		// Guard for oob
@@ -263,29 +263,23 @@ func Decode(data []byte, pos uint64) (interface{}, uint64) {
 	char := int(data[pos])
 	slice := make([]interface{}, 0)
 	switch {
-	case char < 24:
+	//case char < 24:
+	case char <= 0x7c:
 		return data[pos], pos + 1
 
-	case char < 56:
-		b := uint64(data[pos]) - 23
-		return FromBin(data[pos+1 : pos+1+b]), pos + 1 + b
+	case char <= 0xb7:
+		b := uint64(data[pos]) - 0x80
 
-	case char < 64:
-		b := uint64(data[pos]) - 55
-		b2 := uint64(FromBin(data[pos+1 : pos+1+b]))
-		return FromBin(data[pos+1+b : pos+1+b+b2]), pos + 1 + b + b2
-
-	case char < 120:
-		b := uint64(data[pos]) - 64
 		return data[pos+1 : pos+1+b], pos + 1 + b
 
-	case char < 128:
-		b := uint64(data[pos]) - 119
+	case char <= 0xbf:
+		b := uint64(data[pos]) - 0xb8
 		b2 := uint64(FromBin(data[pos+1 : pos+1+b]))
+
 		return data[pos+1+b : pos+1+b+b2], pos + 1 + b + b2
 
-	case char < 184:
-		b := uint64(data[pos]) - 128
+	case char <= 0xf7:
+		b := uint64(data[pos]) - 0xc0
 		pos++
 		for i := uint64(0); i < b; i++ {
 			var obj interface{}
@@ -295,9 +289,8 @@ func Decode(data []byte, pos uint64) (interface{}, uint64) {
 		}
 		return slice, pos
 
-	case char < 192:
-		b := uint64(data[pos]) - 183
-		//b2 := int(FromBin(data[pos+1 : pos+1+b])) (ref implementation has an unused variable)
+	case char < 0xff:
+		b := uint64(data[pos]) - 0xf8
 		pos = pos + 1 + b
 		for i := uint64(0); i < b; i++ {
 			var obj interface{}
@@ -314,6 +307,12 @@ func Decode(data []byte, pos uint64) (interface{}, uint64) {
 	return slice, 0
 }
 
+var (
+	directRlp = big.NewInt(0x7f)
+	numberRlp = big.NewInt(0xb7)
+	zeroRlp   = big.NewInt(0x0)
+)
+
 func Encode(object interface{}) []byte {
 	var buff bytes.Buffer
 
@@ -321,69 +320,54 @@ func Encode(object interface{}) []byte {
 		switch t := object.(type) {
 		case *RlpValue:
 			buff.Write(Encode(t.AsRaw()))
+		// Code dup :-/
 		case int:
-			buff.Write(Encode(uint32(t)))
-		case uint16, uint32, uint64, int64, int32, int16, int8:
-			var num uint64
-			if _num, ok := t.(uint64); ok {
-				num = _num
-			} else if _num, ok := t.(uint32); ok {
-				num = uint64(_num)
-			} else if _num, ok := t.(uint16); ok {
-				num = uint64(_num)
-			}
-
-			if num >= 0 && num < 24 {
-				buff.WriteString(string(num))
-			} else if num <= uint64(math.Pow(2, 256)) {
-				b := ToBin(num, 0)
-				buff.WriteString(string(len(b)+23) + b)
-			} else {
-				b := ToBin(num, 0)
-				b2 := ToBin(uint64(len(b)), 0)
-				buff.WriteString(string(len(b2)+55) + b2 + b)
-			}
-
+			buff.Write(Encode(big.NewInt(int64(t))))
+		case uint:
+			buff.Write(Encode(big.NewInt(int64(t))))
+		case int8:
+			buff.Write(Encode(big.NewInt(int64(t))))
+		case int16:
+			buff.Write(Encode(big.NewInt(int64(t))))
+		case int32:
+			buff.Write(Encode(big.NewInt(int64(t))))
+		case int64:
+			buff.Write(Encode(big.NewInt(t)))
+		case uint16:
+			buff.Write(Encode(big.NewInt(int64(t))))
+		case uint32:
+			buff.Write(Encode(big.NewInt(int64(t))))
+		case uint64:
+			buff.Write(Encode(big.NewInt(int64(t))))
+		case byte:
+			buff.Write(Encode(big.NewInt(int64(t))))
 		case *big.Int:
-			buff.Write(Encode(string(t.Bytes())))
-
+			buff.Write(Encode(t.Bytes()))
+		case []byte:
+			buff.Write(Encode(string(t)))
 		case string:
 			if len(t) < 56 {
-				buff.WriteString(string(len(t)+64) + t)
+				buff.Write(append([]byte{byte(len(t) + 0x80)}, t...))
 			} else {
 				b2 := ToBin(uint64(len(t)), 0)
-				buff.WriteString(string(len(b2)+119) + b2 + t)
+				buff.Write(append(append([]byte{byte(len(b2) + 0xb7)}, b2...), t...))
 			}
 
-		case byte:
-			buff.Write(Encode(uint32(t)))
-		case []byte:
-			// Cast the byte slice to a string
-			buff.Write(Encode(string(t)))
-
-		case []interface{}, []string:
+		case []interface{}:
 			// Inline function for writing the slice header
 			WriteSliceHeader := func(length int) {
 				if length < 56 {
-					buff.WriteByte(byte(length + 128))
+					buff.WriteByte(byte(length + 0xc0))
 				} else {
 					b2 := ToBin(uint64(length), 0)
-					buff.WriteByte(byte(len(b2) + 183))
+					buff.WriteByte(byte(len(b2) + 0xf7))
 					buff.WriteString(b2)
 				}
 			}
 
-			// FIXME How can I do this "better"?
-			if interSlice, ok := t.([]interface{}); ok {
-				WriteSliceHeader(len(interSlice))
-				for _, val := range interSlice {
-					buff.Write(Encode(val))
-				}
-			} else if stringSlice, ok := t.([]string); ok {
-				WriteSliceHeader(len(stringSlice))
-				for _, val := range stringSlice {
-					buff.Write(Encode(val))
-				}
+			WriteSliceHeader(len(t))
+			for _, val := range t {
+				buff.Write(Encode(val))
 			}
 		}
 	} else {

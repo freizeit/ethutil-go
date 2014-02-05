@@ -3,6 +3,7 @@ package ethutil
 import (
 	"bytes"
 	"fmt"
+	"reflect"
 	"testing"
 )
 
@@ -43,50 +44,66 @@ func TestRlpValueSlice(t *testing.T) {
 	}
 }
 
-func TestEncode(t *testing.T) {
-	strRes := "Cdog"
+func TestValue(t *testing.T) {
+	value := NewValueFromBytes([]byte("\xc4\x83dog\x83god\x83cat\x01"))
+	if value.Get(0).AsString() != "dog" {
+		t.Errorf("expected '%v', got '%v'", value.Get(0).AsString(), "dog")
+	}
 
+	if value.Get(3).AsUint() != 1 {
+		t.Errorf("expected '%v', got '%v'", value.Get(3).AsUint(), 1)
+	}
+}
+
+func TestEncode(t *testing.T) {
+	strRes := "\x83dog"
 	bytes := Encode("dog")
 
 	str := string(bytes)
 	if str != strRes {
 		t.Error(fmt.Sprintf("Expected %q, got %q", strRes, str))
 	}
-	//dec,_ := Decode(bytes, 0)
 
-	sliceRes := "\x83CdogCgodCcat"
-	strs := []string{"dog", "god", "cat"}
+	sliceRes := "\xc3\x83dog\x83god\x83cat"
+	strs := []interface{}{"dog", "god", "cat"}
 	bytes = Encode(strs)
 	slice := string(bytes)
 	if slice != sliceRes {
 		t.Error(fmt.Sprintf("Expected %q, got %q", sliceRes, slice))
 	}
 
-	//dec,_ = Decode(bytes, 0)
+	intRes := "\x82\x04\x00"
+	bytes = Encode(1024)
+	if string(bytes) != intRes {
+		t.Errorf("Expected %q, got %q", intRes, bytes)
+	}
 }
 
-func TestMultiEncode(t *testing.T) {
-	inter := []interface{}{
-		[]interface{}{
-			"1", "2", "3",
-		},
-		[]string{
-			"string",
-			"string2",
-			"\x86A0J1234567890A\x00B20A0\x82F395843F657986",
-			"\x86A0J1234567890A\x00B20A0\x8cF395843F657986I335612448F524099H16716881A0H13114947G2039362G1507139H16719697G1048387E65360",
-		},
-		"test",
+func TestDecode(t *testing.T) {
+	single := []byte("\x01")
+	b, _ := Decode(single, 0)
+
+	if b.(uint8) != 1 {
+		t.Errorf("Expected 1, got %q", b)
 	}
 
-	bytes := Encode(inter)
+	str := []byte("\x83dog")
+	b, _ = Decode(str, 0)
+	if bytes.Compare(b.([]byte), []byte("dog")) != 0 {
+		t.Errorf("Expected dog, got %q", b)
+	}
 
-	Decode(bytes, 0)
+	slice := []byte("\xc3\x83dog\x83god\x83cat")
+	res := []interface{}{"dog", "god", "cat"}
+	b, _ = Decode(slice, 0)
+	if reflect.DeepEqual(b, res) {
+		t.Errorf("Expected %q, got %q", res, b)
+	}
 }
 
 func BenchmarkEncodeDecode(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		bytes := Encode([]string{"dog", "god", "cat"})
+		bytes := Encode([]interface{}{"dog", "god", "cat"})
 		Decode(bytes, 0)
 	}
 }
