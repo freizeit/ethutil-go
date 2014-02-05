@@ -46,7 +46,7 @@ func TestValueSlice(t *testing.T) {
 }
 
 func TestValue(t *testing.T) {
-	value := NewValueFromBytes([]byte("\xc4\x83dog\x83god\x83cat\x01"))
+	value := NewValueFromBytes([]byte("\xcd\x83dog\x83god\x83cat\x01"))
 	if value.Get(0).Str() != "dog" {
 		t.Errorf("expected '%v', got '%v'", value.Get(0).Str(), "dog")
 	}
@@ -65,7 +65,7 @@ func TestEncode(t *testing.T) {
 		t.Error(fmt.Sprintf("Expected %q, got %q", strRes, str))
 	}
 
-	sliceRes := "\xc3\x83dog\x83god\x83cat"
+	sliceRes := "\xcc\x83dog\x83god\x83cat"
 	strs := []interface{}{"dog", "god", "cat"}
 	bytes = Encode(strs)
 	slice := string(bytes)
@@ -94,7 +94,7 @@ func TestDecode(t *testing.T) {
 		t.Errorf("Expected dog, got %q", b)
 	}
 
-	slice := []byte("\xc3\x83dog\x83god\x83cat")
+	slice := []byte("\xcc\x83dog\x83god\x83cat")
 	res := []interface{}{"dog", "god", "cat"}
 	b, _ = Decode(slice, 0)
 	if reflect.DeepEqual(b, res) {

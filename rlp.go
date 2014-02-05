@@ -2,6 +2,7 @@ package ethutil
 
 import (
 	"bytes"
+	"encoding/binary"
 	"fmt"
 	"log"
 	_ "math"
@@ -232,13 +233,13 @@ func ToBinarySlice(n uint64, length uint64) []uint64 {
 
 // RLP Encoding/Decoding methods
 
-func ToBin(n uint64, length uint64) string {
+func ToBin(n uint64, length uint64) []byte {
 	var buf bytes.Buffer
 	for _, val := range ToBinarySlice(n, length) {
 		buf.WriteByte(byte(val))
 	}
 
-	return buf.String()
+	return buf.Bytes()
 }
 
 func FromBin(data []byte) uint64 {
@@ -279,23 +280,31 @@ func Decode(data []byte, pos uint64) (interface{}, uint64) {
 
 	case char <= 0xf7:
 		b := uint64(data[pos]) - 0xc0
+		prevPos := pos
 		pos++
-		for i := uint64(0); i < b; i++ {
+		for i := uint64(0); i < b; {
 			var obj interface{}
 
-			obj, pos = Decode(data, pos)
+			obj, prevPos = Decode(data, pos)
 			slice = append(slice, obj)
+
+			i += (prevPos - pos)
+			pos = prevPos
 		}
 		return slice, pos
 
-	case char < 0xff:
+	case char <= 0xff:
 		b := uint64(data[pos]) - 0xf8
 		pos = pos + 1 + b
-		for i := uint64(0); i < b; i++ {
+		prevPos := uint64(0)
+		for i := uint64(0); i < b; {
 			var obj interface{}
 
-			obj, pos = Decode(data, pos)
+			obj, prevPos = Decode(data, pos)
 			slice = append(slice, obj)
+
+			i += (prevPos - pos)
+			pos = prevPos
 		}
 		return slice, pos
 
@@ -343,14 +352,26 @@ func Encode(object interface{}) []byte {
 		case *big.Int:
 			buff.Write(Encode(t.Bytes()))
 		case []byte:
-			buff.Write(Encode(string(t)))
-		case string:
 			if len(t) < 56 {
 				buff.Write(append([]byte{byte(len(t) + 0x80)}, t...))
 			} else {
-				b2 := ToBin(uint64(len(t)), 0)
-				buff.Write(append(append([]byte{byte(len(b2) + 0xb7)}, b2...), t...))
+				var b bytes.Buffer
+				binary.Write(&b, binary.BigEndian, len(t))
+				buff.Write(append(append([]byte{byte(len(b.Bytes()) + 0xb7)}, b.Bytes()...), t...))
+
+				//b2 := ToBin(uint64(len(t)), 0)
+				//buff.Write(append(append([]byte{byte(len(b2) + 0xb7)}, b2...), t...))
 			}
+		case string:
+			buff.Write(Encode([]byte(t)))
+			/*
+				if len(t) < 56 {
+					buff.Write(append([]byte{byte(len(t) + 0x80)}, t...))
+				} else {
+					b2 := ToBin(uint64(len(t)), 0)
+					buff.Write(append(append([]byte{byte(len(b2) + 0xb7)}, b2...), t...))
+				}
+			*/
 
 		case []interface{}:
 			// Inline function for writing the slice header
@@ -358,16 +379,19 @@ func Encode(object interface{}) []byte {
 				if length < 56 {
 					buff.WriteByte(byte(length + 0xc0))
 				} else {
-					b2 := ToBin(uint64(length), 0)
-					buff.WriteByte(byte(len(b2) + 0xf7))
-					buff.WriteString(b2)
+					var b bytes.Buffer
+					binary.Write(&b, binary.BigEndian, length)
+					buff.WriteByte(byte(len(b.Bytes()) + 0xf7))
+					buff.Write(b.Bytes())
 				}
 			}
 
-			WriteSliceHeader(len(t))
+			var b bytes.Buffer
 			for _, val := range t {
-				buff.Write(Encode(val))
+				b.Write(Encode(val))
 			}
+			WriteSliceHeader(len(b.Bytes()))
+			buff.Write(b.Bytes())
 		}
 	} else {
 		// Empty list for nil
