@@ -36,7 +36,7 @@ func (val *Value) IsNil() bool {
 	return val.Val == nil
 }
 
-func (val *Value) Length() int {
+func (val *Value) Len() int {
 	//return val.kind.Len()
 	if data, ok := val.Val.([]interface{}); ok {
 		return len(data)

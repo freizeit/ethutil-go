@@ -29,18 +29,18 @@ func TestValueSlice(t *testing.T) {
 	value := NewValue(val)
 	splitVal := value.SliceFrom(1)
 
-	if splitVal.Length() != 2 {
-		t.Error("SliceFrom: Expected len", 2, "got", splitVal.Length())
+	if splitVal.Len() != 2 {
+		t.Error("SliceFrom: Expected len", 2, "got", splitVal.Len())
 	}
 
 	splitVal = value.SliceTo(2)
-	if splitVal.Length() != 2 {
-		t.Error("SliceTo: Expected len", 2, "got", splitVal.Length())
+	if splitVal.Len() != 2 {
+		t.Error("SliceTo: Expected len", 2, "got", splitVal.Len())
 	}
 
 	splitVal = value.SliceFromTo(1, 3)
-	if splitVal.Length() != 2 {
-		t.Error("SliceFromTo: Expected len", 2, "got", splitVal.Length())
+	if splitVal.Len() != 2 {
+		t.Error("SliceFromTo: Expected len", 2, "got", splitVal.Len())
 	}
 }
 
