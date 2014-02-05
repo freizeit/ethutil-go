@@ -260,10 +260,9 @@ func Decode(data []byte, pos uint64) (interface{}, uint64) {
 		log.Panicf("index out of range %d for data %q, l = %d", pos, data, len(data))
 	}
 
+	var slice []interface{}
 	char := int(data[pos])
-	slice := make([]interface{}, 0)
 	switch {
-	//case char < 24:
 	case char <= 0x7c:
 		return data[pos], pos + 1
 

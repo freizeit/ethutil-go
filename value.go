@@ -18,12 +18,6 @@ func (val *Value) String() string {
 	return fmt.Sprintf("%q", val.Val)
 }
 
-/*
-func Conv(val interface{}) *Value {
-	return &Value{Val: val, kind: reflect.ValueOf(val)}
-}
-*/
-
 func NewValue(val interface{}) *Value {
 	return &Value{Val: val}
 }
@@ -73,8 +67,8 @@ func (val *Value) Byte() byte {
 
 func (val *Value) BigInt() *big.Int {
 	if a, ok := val.Val.([]byte); ok {
-		b := new(big.Int)
-		b.SetBytes(a)
+		b := new(big.Int).SetBytes(a)
+
 		return b
 	}
 

@@ -3,6 +3,7 @@ package ethutil
 import (
 	"bytes"
 	"fmt"
+	"math/big"
 	"reflect"
 	"testing"
 )
@@ -98,6 +99,15 @@ func TestDecode(t *testing.T) {
 	b, _ = Decode(slice, 0)
 	if reflect.DeepEqual(b, res) {
 		t.Errorf("Expected %q, got %q", res, b)
+	}
+}
+
+func TestEncodeDecodeBigInt(t *testing.T) {
+	bigInt := big.NewInt(1024)
+	encoded := Encode(bigInt)
+	value := NewValueFromBytes(encoded)
+	if value.BigInt().Cmp(bigInt) != 0 {
+		t.Errorf("Expected %v, got %v", bigInt, value.BigInt())
 	}
 }
 
