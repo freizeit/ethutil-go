@@ -76,19 +76,19 @@ func (t *Trie) Update(key string, value string) {
 
 func (t *Trie) Get(key string) string {
 	k := CompactHexDecode(key)
-	c := Conv(t.GetStateT(t.Root, k))
+	c := Conv(t.GetState(t.Root, k))
 
 	return c.AsString()
 }
 
-func (t *Trie) GetStateT(node interface{}, key []int) interface{} {
+func (t *Trie) GetState(node interface{}, key []int) interface{} {
 	n := Conv(node)
 	// Return the node if key is empty (= found)
 	if len(key) == 0 || n.IsNil() {
 		return node
 	}
 
-	currentNode := t.GetNodeT(node)
+	currentNode := t.GetNode(node)
 	length := currentNode.Length()
 
 	if length == 0 {
@@ -99,12 +99,12 @@ func (t *Trie) GetStateT(node interface{}, key []int) interface{} {
 		v := currentNode.Get(1).AsRaw()
 
 		if len(key) >= len(k) && CompareIntSlice(k, key[:len(k)]) {
-			return t.GetStateT(v, key[len(k):])
+			return t.GetState(v, key[len(k):])
 		} else {
 			return ""
 		}
 	} else if length == 17 {
-		return t.GetStateT(currentNode.Get(key[0]).AsRaw(), key[1:])
+		return t.GetState(currentNode.Get(key[0]).AsRaw(), key[1:])
 	}
 
 	// It shouldn't come this far
@@ -112,7 +112,7 @@ func (t *Trie) GetStateT(node interface{}, key []int) interface{} {
 	return ""
 }
 
-func (t *Trie) GetNodeT(node interface{}) *RlpValue {
+func (t *Trie) GetNode(node interface{}) *RlpValue {
 	n := Conv(node)
 
 	//if n.Type() != reflect.String {
@@ -140,12 +140,6 @@ func (t *Trie) GetNodeT(node interface{}) *RlpValue {
 
 }
 
-func (t *Trie) UpdateT(key string, value string) {
-	k := CompactHexDecode(key)
-
-	t.Root = t.UpdateState(t.Root, k, value)
-}
-
 func (t *Trie) UpdateState(node interface{}, key []int, value string) interface{} {
 	if value != "" {
 		return t.InsertState(node, key, value)
@@ -158,6 +152,7 @@ func (t *Trie) UpdateState(node interface{}, key []int, value string) interface{
 
 func (t *Trie) Put(node interface{}) interface{} {
 	enc := Encode(node)
+	//fmt.Printf("RLP %x\nSHA3 %x\n", enc, Sha3Bin(enc))
 
 	if len(enc) >= 32 {
 		var sha []byte
@@ -193,14 +188,14 @@ func (t *Trie) InsertState(node interface{}, key []int, value interface{}) inter
 	}
 
 	// New node
-	n := Conv(node)
-	if node == nil || (n.Type() == reflect.String && (n.AsString() == "" || n.Get(0).IsNil())) {
+	n := NewValue(node)
+	if node == nil || (n.Type() == reflect.String && (n.Str() == "" || n.Get(0).IsNil())) || n.Len() == 0 {
 		newNode := []interface{}{CompactEncode(key), value}
 
 		return t.Put(newNode)
 	}
 
-	currentNode := t.GetNodeT(node)
+	currentNode := t.GetNode(node)
 	// Check for "special" 2 slice type node
 	if currentNode.Length() == 2 {
 		// Decode the key
@@ -239,6 +234,7 @@ func (t *Trie) InsertState(node interface{}, key []int, value interface{}) inter
 			return t.Put(newNode)
 		}
 	} else {
+
 		// Copy the current node over to the new node and replace the first nibble in the key
 		newNode := EmptyStringSlice(17)
 

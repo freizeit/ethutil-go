@@ -6,4 +6,5 @@ type Database interface {
 	Get(key []byte) ([]byte, error)
 	LastKnownTD() []byte
 	Close()
+	Print()
 }

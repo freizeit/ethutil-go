@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	_ "io"
 	"log"
 	_ "math"
 	"math/big"
@@ -222,6 +223,33 @@ const (
 	RlpEmptyStr  = 0x40
 )
 
+/*
+func ReadUntill(reader io.Reader, len int) (char []byte) {
+	char = make([]byte, len)
+	reader.Read(char)
+
+	return
+}
+
+func DecodeWithReader(reader io.Reader) interface{} {
+	var slice []interface{}
+
+	// Read the next byte
+	char := GetChar(reader)
+	switch {
+	case char <= 0x7c:
+		return data[pos], pos + 1
+
+	case char <= 0xb7:
+		b := uint64(data[pos]) - 0x80
+
+		return data[pos+1 : pos+1+b], pos + 1 + b
+	}
+
+	return slice
+}
+*/
+
 // TODO Use a bytes.Buffer instead of a raw byte slice.
 // Cleaner code, and use draining instead of seeking the next bytes to read
 func Decode(data []byte, pos uint64) (interface{}, uint64) {
@@ -233,7 +261,7 @@ func Decode(data []byte, pos uint64) (interface{}, uint64) {
 	var slice []interface{}
 	char := int(data[pos])
 	switch {
-	case char <= 0x7c:
+	case char <= 0x7f:
 		return data[pos], pos + 1
 
 	case char <= 0xb7:
@@ -271,10 +299,15 @@ func Decode(data []byte, pos uint64) (interface{}, uint64) {
 		return slice, pos
 
 	case char <= 0xff:
-		b := uint64(data[pos]) - 0xf8
-		pos = pos + 1 + b
-		prevPos := uint64(0)
-		for i := uint64(0); i < b; {
+		l := uint64(data[pos]) - 0xf7
+		b := BigD(data[pos+1 : pos+1+l]).Uint64()
+		//fmt.Println("b", b)
+		//b := uint64(data[pos+l])
+
+		pos = pos + l + 1
+
+		prevPos := b
+		for i := uint64(0); i < uint64(b); {
 			var obj interface{}
 
 			obj, prevPos = Decode(data, pos)
@@ -329,12 +362,17 @@ func Encode(object interface{}) []byte {
 		case *big.Int:
 			buff.Write(Encode(t.Bytes()))
 		case []byte:
-			if len(t) < 56 {
-				buff.Write(append([]byte{byte(len(t) + 0x80)}, t...))
+			if len(t) == 1 && t[0] <= 0x7f {
+				buff.Write(t)
+			} else if len(t) < 56 {
+				buff.WriteByte(byte(len(t) + 0x80))
+				buff.Write(t)
 			} else {
 				var b bytes.Buffer
 				binary.Write(&b, binary.BigEndian, len(t))
-				buff.Write(append(append([]byte{byte(len(b.Bytes()) + 0xb7)}, b.Bytes()...), t...))
+				buff.WriteByte(byte(len(b.Bytes()) + 0xb7))
+				buff.Write(b.Bytes())
+				buff.Write(t)
 			}
 		case string:
 			buff.Write(Encode([]byte(t)))
@@ -344,8 +382,7 @@ func Encode(object interface{}) []byte {
 				if length < 56 {
 					buff.WriteByte(byte(length + 0xc0))
 				} else {
-					var b bytes.Buffer
-					binary.Write(&b, binary.BigEndian, length)
+					b := big.NewInt(int64(length))
 					buff.WriteByte(byte(len(b.Bytes()) + 0xf7))
 					buff.Write(b.Bytes())
 				}

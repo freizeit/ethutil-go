@@ -15,7 +15,7 @@ type Value struct {
 }
 
 func (val *Value) String() string {
-	return fmt.Sprintf("%q", val.Val)
+	return fmt.Sprintf("%x", val.Val)
 }
 
 func NewValue(val interface{}) *Value {
@@ -33,6 +33,9 @@ func (val *Value) IsNil() bool {
 func (val *Value) Len() int {
 	//return val.kind.Len()
 	if data, ok := val.Val.([]interface{}); ok {
+		return len(data)
+	} else if data, ok := val.Val.([]byte); ok {
+		// FIXME
 		return len(data)
 	}
 
@@ -70,6 +73,8 @@ func (val *Value) BigInt() *big.Int {
 		b := new(big.Int).SetBytes(a)
 
 		return b
+	} else {
+		return big.NewInt(int64(val.Uint()))
 	}
 
 	return big.NewInt(0)
