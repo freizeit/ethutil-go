@@ -161,8 +161,22 @@ func NewValueFromBytes(rlpData []byte) *Value {
 }
 
 // Value setters
-func NewSliceValue() *Value {
-	return NewValue([]interface{}{})
+func NewSliceValue(s interface{}) *Value {
+	list := EmptyValue()
+
+	if s != nil {
+		if slice, ok := s.([]interface{}); ok {
+			for _, val := range slice {
+				list.Append(val)
+			}
+		} else if slice, ok := s.([]string); ok {
+			for _, val := range slice {
+				list.Append(val)
+			}
+		}
+	}
+
+	return list
 }
 
 func EmptyValue() *Value {
