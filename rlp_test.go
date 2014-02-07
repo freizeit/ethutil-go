@@ -2,6 +2,7 @@ package ethutil
 
 import (
 	"bytes"
+	"encoding/hex"
 	"fmt"
 	"math/big"
 	"reflect"
@@ -103,12 +104,17 @@ func TestDecode(t *testing.T) {
 }
 
 func TestEncodeDecodeBigInt(t *testing.T) {
-	bigInt := big.NewInt(1024)
+	bigInt := big.NewInt(1391787038)
 	encoded := Encode(bigInt)
+
 	value := NewValueFromBytes(encoded)
+	fmt.Println(value.BigInt(), bigInt)
 	if value.BigInt().Cmp(bigInt) != 0 {
 		t.Errorf("Expected %v, got %v", bigInt, value.BigInt())
 	}
+
+	dec, _ := hex.DecodeString("52f4fc1e")
+	fmt.Println(NewValueFromBytes(dec).BigInt())
 }
 
 /*
